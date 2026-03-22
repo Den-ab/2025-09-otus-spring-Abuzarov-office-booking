@@ -17,4 +17,9 @@ public class AreaService {
 
         return this.areaRepository.findAll();
     }
+
+    public Area create(Area area) {
+
+        return this.areaRepository.save(area);
+    }
 }
