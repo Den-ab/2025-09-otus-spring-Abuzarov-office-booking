@@ -25,5 +25,5 @@ public class Desk {
     @ManyToOne
     private Area area;
 
-    private String name;
+    private int number;
 }
