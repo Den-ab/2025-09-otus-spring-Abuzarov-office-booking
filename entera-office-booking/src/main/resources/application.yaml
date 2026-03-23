@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: entera-office-booking
+  datasource:
+    url: jdbc:postgresql://localhost:5432/entera_office_booking?characterEncoding=UTF8
+    username: entera
+    password: 777779
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    schemas: public
+    locations: classpath:db/migration
+logging:
+  level:
+    org.flywaydb: debug
