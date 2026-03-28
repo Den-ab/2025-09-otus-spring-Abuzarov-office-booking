@@ -55,4 +55,9 @@ public class BookingService {
 
         return this.bookingRepository.save(booking);
     }
+
+    public void delete(UUID bookingId) {
+
+        this.bookingRepository.deleteById(bookingId);
+    }
 }

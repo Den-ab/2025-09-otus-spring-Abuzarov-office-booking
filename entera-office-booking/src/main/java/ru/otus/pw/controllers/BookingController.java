@@ -2,7 +2,9 @@ package ru.otus.pw.controllers;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,5 +38,12 @@ public class BookingController {
         final Booking booking = this.bookingService.bookDesk(userId, deskId);
 
         return ResponseEntity.ok(booking);
+    }
+
+    @DeleteMapping(value = "/bookings/{id}")
+    public void deleteBooking(@PathVariable String id) {
+
+        final UUID bookingId = UUID.fromString(id);
+        this.bookingService.delete(bookingId);
     }
 }
