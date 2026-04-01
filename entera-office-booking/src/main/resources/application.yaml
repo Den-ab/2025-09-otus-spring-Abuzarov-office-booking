@@ -2,9 +2,9 @@ spring:
   application:
     name: entera-office-booking
   datasource:
-    url: jdbc:postgresql://localhost:5432/entera_office_booking?characterEncoding=UTF8
-    username: entera
-    password: 777779
+    url: ${POSTGRES_URL:jdbc:postgresql://pg:5432/entera_office_booking?characterEncoding=UTF8}
+    username: ${POSTGRES_USERNAME:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   flyway:
     schemas: public

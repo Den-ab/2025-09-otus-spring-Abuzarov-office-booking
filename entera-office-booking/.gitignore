@@ -1,5 +1,6 @@
 target/
 dependency-reduced-pom.xml
+.env
 
 ### STS ###
 .apt_generated
@@ -23,3 +24,7 @@ dependency-reduced-pom.xml
 /dist/
 /nbdist/
 /.nb-gradle/
+
+### Docker
+docker-compose.yaml
+docker-compose.yml
