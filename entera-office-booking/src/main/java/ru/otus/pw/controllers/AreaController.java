@@ -16,12 +16,27 @@ import ru.otus.pw.services.AreaService;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Контроллер для работы с пространствами.
+ */
 @RequiredArgsConstructor
 @RestController
 public class AreaController {
+    //region Fields
 
+    /**
+     * Сервис для работы с пространствами.
+     */
     private final AreaService areaService;
 
+    //endregion
+    //region Public
+
+    /**
+     * Возвращает список пространств.
+     *
+     * @return Список пространств.
+     */
     @GetMapping(value = "/areas")
     public ResponseEntity<List<Area>> findAllAreas() {
 
@@ -30,6 +45,13 @@ public class AreaController {
         return ResponseEntity.ok(areas);
     }
 
+    /**
+     * Создает пространство.
+     *
+     * @param area Пространство.
+     *
+     * @return Созданное пространство.
+     */
     @PostMapping(value = "/areas")
     public ResponseEntity<Area> createArea(@RequestBody AreaDTO area) {
 
@@ -38,6 +60,13 @@ public class AreaController {
         return ResponseEntity.ok(savedArea);
     }
 
+    /**
+     * Обновляет пространство.
+     *
+     * @param area Пространство.
+     *
+     * @return Обновленное пространство.
+     */
     @PutMapping(value = "/areas")
     public ResponseEntity<Area> updateArea(@RequestBody AreaDTO area) {
 
@@ -46,9 +75,16 @@ public class AreaController {
         return ResponseEntity.ok(savedArea);
     }
 
+    /**
+     * Удаляет пространство.
+     *
+     * @param id Идентификатор пространства.
+     */
     @DeleteMapping(value = "/areas/{id}")
     public void deleteArea(@PathVariable String id) {
 
         this.areaService.delete(UUID.fromString(id));
     }
+
+    //endregion
 }

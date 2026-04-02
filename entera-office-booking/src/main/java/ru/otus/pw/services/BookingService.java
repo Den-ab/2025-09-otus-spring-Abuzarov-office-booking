@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import ru.otus.pw.models.Booking;
 import ru.otus.pw.models.Desk;
 import ru.otus.pw.models.EnteraUser;
-import ru.otus.pw.repositories.AreaRepository;
 import ru.otus.pw.repositories.BookingRepository;
 import ru.otus.pw.repositories.DeskRepository;
 import ru.otus.pw.repositories.EnteraUserRepository;
@@ -18,23 +17,55 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Сервис для работы с бронированиями.
+ */
 @RequiredArgsConstructor
 @Service
 public class BookingService {
+    //region Fields
 
+    /**
+     * Репозиторий бронирований.
+     */
     private final BookingRepository bookingRepository;
 
+    /**
+     * Репозиторий пользователей.
+     */
     private final EnteraUserRepository userRepository;
 
+    /**
+     * Репозиторий столов.
+     */
     private final DeskRepository deskRepository;
 
+    /**
+     * Сервис для работы с почтой.
+     */
     private final MailSenderService mailSenderService;
 
+    //endregion
+    //region Public
+
+    /**
+     * Возвращает список бронирований.
+     *
+     * @return Список бронирований.
+     */
     public List<Booking> findAll() {
 
         return this.bookingRepository.findAll();
     }
 
+    /**
+     * Создает бронирование.
+     *
+     * @param userId Идентификатор пользователя.
+     * @param deskId Идентификатор стола.
+     *
+     * @return Созданное бронирование.
+     */
     public Booking bookDesk(UUID userId, UUID deskId) {
         final Instant now = Instant.now();
         final ZoneId zoneId = ZoneId.systemDefault();
@@ -61,8 +92,15 @@ public class BookingService {
         return savedBook;
     }
 
+    /**
+     * Удаляет бронирование.
+     *
+     * @param bookingId Идентификатор бронирования.
+     */
     public void delete(UUID bookingId) {
 
         this.bookingRepository.deleteById(bookingId);
     }
+
+    //endregion
 }

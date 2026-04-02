@@ -1,3 +1,9 @@
 package ru.otus.pw.controllers.request_dtos;
 
-public record BookDeskDTO (String userId, String deskId) { }
+/**
+ * Бронирование.
+ *
+ * @param userId Идентификатор пользователя.
+ * @param deskId Идентификатор стола.
+ */
+public record BookDeskDTO(String userId, String deskId) { }

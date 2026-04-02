@@ -5,4 +5,7 @@ import ru.otus.pw.models.Desk;
 
 import java.util.UUID;
 
+/**
+ * Репозиторий столов.
+ */
 public interface DeskRepository extends JpaRepository<Desk, UUID> { }

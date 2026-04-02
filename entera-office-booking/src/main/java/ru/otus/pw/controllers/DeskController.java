@@ -16,12 +16,27 @@ import ru.otus.pw.services.DeskService;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Контроллер для работы со столами.
+ */
 @RequiredArgsConstructor
 @RestController
 public class DeskController {
+    //region Fields
 
+    /**
+     * Сервис для работы со столами.
+     */
     private final DeskService deskService;
 
+    //endregion
+    //region Public
+
+    /**
+     * Возвращает список столов.
+     *
+     * @return Список столов.
+     */
     @GetMapping(value = "/desks")
     public ResponseEntity<List<Desk>> findAllDesks() {
 
@@ -30,6 +45,13 @@ public class DeskController {
         return ResponseEntity.ok(desks);
     }
 
+    /**
+     * Создает стол.
+     *
+     * @param desk Данные стола.
+     *
+     * @return Созданный стол.
+     */
     @PostMapping(value = "/desks")
     public ResponseEntity<Desk> createDesk(@RequestBody DeskDTO desk) {
 
@@ -38,6 +60,13 @@ public class DeskController {
         return ResponseEntity.ok(savedDesk);
     }
 
+    /**
+     * Обновляет стол.
+     *
+     * @param desk Данные стола.
+     *
+     * @return Обновляет стол.
+     */
     @PutMapping(value = "/desks")
     public ResponseEntity<Desk> updateDesk(@RequestBody DeskDTO desk) {
 
@@ -46,9 +75,16 @@ public class DeskController {
         return ResponseEntity.ok(savedDesk);
     }
 
+    /**
+     * Удаляет стол.
+     *
+     * @param id Идентификатор стола.
+     */
     @DeleteMapping(value = "/desks/{id}")
     public void deleteDesk(@PathVariable String id) {
 
         this.deskService.delete(UUID.fromString(id));
     }
+
+    //endregion
 }

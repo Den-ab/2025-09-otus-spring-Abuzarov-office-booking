@@ -12,6 +12,9 @@ import lombok.Setter;
 
 import java.util.UUID;
 
+/**
+ * Пользователь.
+ */
 @Getter
 @Setter
 @AllArgsConstructor
@@ -19,13 +22,29 @@ import java.util.UUID;
 @Entity
 @Builder(toBuilder = true)
 public class EnteraUser {
+    //region Fields
+
+    /**
+     * Идентификатор.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    /**
+     * Почта.
+     */
     private String email;
 
+    /**
+     * Имя.
+     */
     private String firstName;
 
+    /**
+     * Фамилия.
+     */
     private String lastName;
+
+    //endregion
 }

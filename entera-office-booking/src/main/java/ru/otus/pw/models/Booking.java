@@ -15,6 +15,9 @@ import lombok.Setter;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Бронирование.
+ */
 @Getter
 @Setter
 @AllArgsConstructor
@@ -22,16 +25,33 @@ import java.util.UUID;
 @Entity
 @Builder(toBuilder = true)
 public class Booking {
+    //region Fields
+
+    /**
+     * Идентификатор.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    /**
+     * Стол.
+     */
     @ManyToOne
+    @JoinColumn(name = "desk_id", nullable = false)
     private Desk desk;
 
+    /**
+     * Пользователь.
+     */
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private EnteraUser user;
 
+    /**
+     * Дата бронирования.
+     */
     private Instant date;
+
+    //endregion
 }

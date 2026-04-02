@@ -12,6 +12,9 @@ import lombok.Setter;
 
 import java.util.UUID;
 
+/**
+ * Пространство.
+ */
 @Getter
 @Setter
 @AllArgsConstructor
@@ -19,9 +22,19 @@ import java.util.UUID;
 @Entity
 @Builder(toBuilder = true)
 public class Area {
+    //region Fields
+
+    /**
+     * Идентификатор.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    /**
+     * Наименование.
+     */
     private String name;
+
+    //endregion
 }

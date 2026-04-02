@@ -13,6 +13,9 @@ import lombok.Setter;
 
 import java.util.UUID;
 
+/**
+ * Стол.
+ */
 @Getter
 @Setter
 @AllArgsConstructor
@@ -20,12 +23,25 @@ import java.util.UUID;
 @Entity
 @Builder(toBuilder = true)
 public class Desk {
+    //region Fields
+
+    /**
+     * Идентификатор.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    /**
+     * Пространство.
+     */
     @ManyToOne
     private Area area;
 
+    /**
+     * Номер.
+     */
     private int number;
+
+    //endregion
 }

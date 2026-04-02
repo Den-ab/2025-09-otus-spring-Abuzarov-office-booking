@@ -5,4 +5,7 @@ import ru.otus.pw.models.EnteraUser;
 
 import java.util.UUID;
 
+/**
+ * Репозиторий пользователей.
+ */
 public interface EnteraUserRepository extends JpaRepository<EnteraUser, UUID> { }

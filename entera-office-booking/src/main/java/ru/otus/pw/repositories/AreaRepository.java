@@ -5,4 +5,7 @@ import ru.otus.pw.models.Area;
 
 import java.util.UUID;
 
+/**
+ * Репозиторий пространств.
+ */
 public interface AreaRepository extends JpaRepository<Area, UUID> { }
