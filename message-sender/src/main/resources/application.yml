@@ -35,13 +35,6 @@ spring:
     template-loader-path: classpath:/templates/
     suffix: .ftl
 
-springdoc:
-  api-docs:
-    path: /api
-
-  swagger-ui:
-    path: /swagger.html
-
 application:
   emailTemplatesPath: ${EMAIL_TEMPLATES_PATH:email/}
   emailSenderAddress: ${EMAIL_SENDER_ADDRESS:someRuUserName@yandex.ru}
