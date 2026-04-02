@@ -42,9 +42,9 @@ services:
     env_file:
       - ./message-sender/.env
     environment:
-      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006 -Dlogging.config=/logging/properties.xml"
     ports:
-      - "9015:9015"
+      - "9011:9011"
       - "5006:5006"
     volumes:
       - ./message-sender/logging/properties.xml:/logging/properties.xml
@@ -61,8 +61,10 @@ services:
     container_name: entera-office-booking
     env_file:
       - ./entera-office-booking/.env
+    environment:
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5009
     ports:
-      - "9011:9011"
+      - "9010:9010"
       - "5009:5009"
     volumes:
       - ./entera-office-booking/src/main/resources/logging/properties.xml:/logging/properties.xml
