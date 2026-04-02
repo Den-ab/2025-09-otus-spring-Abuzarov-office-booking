@@ -1,0 +1,49 @@
+server:
+  port: ${SERVER_PORT:9011} # Порт сервера
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+spring:
+  messages:
+    baseName: "i18n/messages"
+    encoding: UTF-8
+    fallbackToSystemLocale: false
+  rabbitmq:
+    addresses: ${RABBITMQ_HOST:rabbitmq}:${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+  mail:
+    host: ${MAIL_HOST:smtp.yandex.ru}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:someUserName}
+    password: ${MAIL_PASSWORD:password}
+    properties:
+      mail:
+        smtp:
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+          debug: true
+          auth: true
+          starttls:
+            enable: true
+          ssl:
+            enable: false
+  freemarker:
+    template-loader-path: classpath:/templates/
+    suffix: .ftl
+
+springdoc:
+  api-docs:
+    path: /api
+
+  swagger-ui:
+    path: /swagger.html
+
+application:
+  emailTemplatesPath: ${EMAIL_TEMPLATES_PATH:email/}
+  emailSenderAddress: ${EMAIL_SENDER_ADDRESS:someRuUserName@yandex.ru}
+  enteraLogoPath: ${ENTERA_LOGO_PATH:images/logo.png}
+  locale: ${LOCALE:ru-RU}
