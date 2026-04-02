@@ -1,3 +1,9 @@
+server:
+  port: ${SERVER_PORT:9010} # Порт сервера
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
 spring:
   application:
     name: entera-office-booking
@@ -12,3 +18,13 @@ spring:
 logging:
   level:
     org.flywaydb: debug
+entera:
+  mail:
+    email-sender: ${EMAIL_SENDER:dabuzarov@entera.pro}
+  messaging:
+    message-sender:
+      exchange:
+        name: "x.message-sender"
+      routing-key: "process"
+      queue:
+        name: "q.message-sender.process"
