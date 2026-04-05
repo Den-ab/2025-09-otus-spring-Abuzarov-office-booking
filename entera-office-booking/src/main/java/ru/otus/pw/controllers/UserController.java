@@ -3,6 +3,7 @@ package ru.otus.pw.controllers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -52,8 +53,13 @@ public class UserController {
 
         UserDetails userDetails = this.enteraUserDetailsService.loadUserByUsername(loginDTO.email());
         String token = this.jwtService.generateToken(userDetails);
+        String role = userDetails.getAuthorities().stream()
+            .findFirst()
+            .map(GrantedAuthority::getAuthority)
+            .map(authority -> authority.replace("ROLE_", ""))
+            .orElse("USER");
 
-        return new AuthResponse(token);
+        return new AuthResponse(token, role);
     }
 
     //endregion
