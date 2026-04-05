@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS entera_user (
     email TEXT NOT NULL,
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
+    password TEXT NOT NULL,
+    role TEXT NOT NULL,
     CONSTRAINT "pk_entera_user" PRIMARY KEY ("id")
 );
 
