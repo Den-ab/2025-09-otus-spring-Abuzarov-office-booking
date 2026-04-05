@@ -35,12 +35,17 @@ type Booking = {
   desk?: Desk | null;
 };
 
+type AuthResponse = {
+  token: string;
+};
+
 type Page = "admin" | "booking";
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+async function request<T>(path: string, token?: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options?.headers ?? {}),
     },
     ...options,
@@ -61,6 +66,12 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 export default function App() {
   const [page, setPage] = useState<Page>("admin");
+
+  const [token, setToken] = useState(() => localStorage.getItem("jwt") || "");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const isAuthenticated = Boolean(token);
+
   const [areas, setAreas] = useState<Area[]>([]);
   const [desks, setDesks] = useState<Desk[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -86,15 +97,19 @@ export default function App() {
       [desks, deskAreaId]
   );
 
-  async function loadAll() {
+  async function loadAll(currentToken = token) {
+    if (!currentToken) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
 
       const [areasData, desksData, bookingsData] = await Promise.all([
-        request<Area[]>("/areas"),
-        request<Desk[]>("/desks"),
-        request<Booking[]>("/bookings"),
+        request<Area[]>("/areas", currentToken),
+        request<Desk[]>("/desks", currentToken),
+        request<Booking[]>("/bookings", currentToken),
       ]);
 
       setAreas(areasData ?? []);
@@ -108,15 +123,64 @@ export default function App() {
         setSelectedDeskId(desksData[0].id);
       }
     } catch (e) {
-      setError(getErrorMessage(e));
+      const message = getErrorMessage(e);
+      setError(message);
+
+      if (message.includes("401") || message.includes("403")) {
+        logout(false);
+      }
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadAll();
-  }, []);
+    if (token) {
+      loadAll(token);
+    }
+  }, [token]);
+
+  async function login() {
+    if (!loginEmail.trim() || !loginPassword.trim()) {
+      setError("Введите email и пароль");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      setSuccess("");
+
+      const response = await request<AuthResponse>("/auth/login", undefined, {
+        method: "POST",
+        body: JSON.stringify({
+          email: loginEmail.trim(),
+          password: loginPassword,
+        }),
+      });
+
+      setToken(response.token);
+      localStorage.setItem("jwt", response.token);
+      setSuccess("Вход выполнен");
+      setLoginPassword("");
+    } catch (e) {
+      setError(getErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function logout(showMessage = true) {
+    setToken("");
+    localStorage.removeItem("jwt");
+    setAreas([]);
+    setDesks([]);
+    setBookings([]);
+    setSelectedDeskId("");
+    setDeskAreaId("");
+    setSuccess(showMessage ? "Вы вышли из системы" : "");
+    setError("");
+  }
 
   async function createArea() {
     if (!newAreaName.trim()) {
@@ -127,7 +191,7 @@ export default function App() {
     try {
       setError("");
       setSuccess("");
-      await request<Area>("/areas", {
+      await request<Area>("/areas", token, {
         method: "POST",
         body: JSON.stringify({ id: null, name: newAreaName.trim() }),
       });
@@ -143,7 +207,7 @@ export default function App() {
     try {
       setError("");
       setSuccess("");
-      await request<void>(`/areas/${id}`, { method: "DELETE" });
+      await request<void>(`/areas/${id}`, token, { method: "DELETE" });
       setSuccess("Пространство удалено");
       await loadAll();
     } catch (e) {
@@ -171,7 +235,7 @@ export default function App() {
     try {
       setError("");
       setSuccess("");
-      await request<Desk>("/desks", {
+      await request<Desk>("/desks", token, {
         method: "POST",
         body: JSON.stringify({ id: null, areaId: deskAreaId, number: parsedNumber }),
       });
@@ -187,7 +251,7 @@ export default function App() {
     try {
       setError("");
       setSuccess("");
-      await request<void>(`/desks/${id}`, { method: "DELETE" });
+      await request<void>(`/desks/${id}`, token, { method: "DELETE" });
       setSuccess("Стол удалён");
       await loadAll();
     } catch (e) {
@@ -199,7 +263,7 @@ export default function App() {
     try {
       setError("");
       setSuccess("");
-      await request<void>(`/bookings/${id}`, { method: "DELETE" });
+      await request<void>(`/bookings/${id}`, token, { method: "DELETE" });
       setSuccess("Бронирование удалено");
       await loadAll();
     } catch (e) {
@@ -221,7 +285,7 @@ export default function App() {
     try {
       setError("");
       setSuccess("");
-      await request<Booking>("/bookings", {
+      await request<Booking>("/bookings", token, {
         method: "POST",
         body: JSON.stringify({ userId: userId.trim(), deskId: selectedDeskId }),
       });
@@ -230,6 +294,51 @@ export default function App() {
     } catch (e) {
       setError(getErrorMessage(e));
     }
+  }
+
+  if (!isAuthenticated) {
+    return (
+        <div style={styles.page}>
+          <div style={styles.authShell}>
+            <section style={styles.authCard}>
+              <div style={styles.badge}>ENTERA OFFICE BOOKING</div>
+              <h1 style={styles.title}>Вход в систему</h1>
+              <p style={styles.subtitle}>
+                Введите email и пароль, чтобы открыть интерфейс бронирования.
+              </p>
+
+              {error && <div style={styles.errorBanner}>{error}</div>}
+              {success && <div style={styles.successBanner}>{success}</div>}
+
+              <div style={styles.formColumn}>
+                <input
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="Email"
+                    style={styles.input}
+                />
+
+                <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="Пароль"
+                    style={styles.input}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        login();
+                      }
+                    }}
+                />
+
+                <button onClick={login} style={styles.bookButton} disabled={loading}>
+                  {loading ? "Входим..." : "Войти"}
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
+    );
   }
 
   return (
@@ -252,12 +361,15 @@ export default function App() {
                 <NavButton active={page === "booking"} onClick={() => setPage("booking")}>
                   Бронирование
                 </NavButton>
+                <button onClick={() => logout()} style={styles.dangerButton}>
+                  Выйти
+                </button>
               </div>
             </div>
           </header>
 
           <div style={styles.actionsRow}>
-            <button onClick={loadAll} style={styles.primaryButton}>
+            <button onClick={() => loadAll()} style={styles.primaryButton}>
               Обновить данные
             </button>
             {loading && <span style={styles.loadingText}>Загрузка…</span>}
@@ -377,7 +489,9 @@ export default function App() {
                           onChange={(e) => setBookingDate(e.target.value)}
                           style={styles.input}
                       />
-                      <p style={styles.helperText}>Поле даты отображается в UI, но текущий backend его не принимает.</p>
+                      <p style={styles.helperText}>
+                        Поле даты отображается в UI, но текущий backend его не принимает.
+                      </p>
                     </div>
 
                     <div style={styles.fieldBlock}>
@@ -526,6 +640,17 @@ const styles: Record<string, React.CSSProperties> = {
   shell: {
     maxWidth: "1320px",
     margin: "0 auto",
+  },
+  authShell: {
+    maxWidth: "480px",
+    margin: "80px auto 0",
+  },
+  authCard: {
+    background: WHITE_COLOR,
+    borderRadius: "28px",
+    padding: "32px",
+    border: `1px solid ${BORDER_COLOR}`,
+    boxShadow: "0 16px 40px rgba(18, 51, 42, 0.06)",
   },
   headerCard: {
     background: `linear-gradient(135deg, ${WHITE_COLOR} 0%, #f7fffc 55%, ${LIGHT_GREEN} 100%)`,
