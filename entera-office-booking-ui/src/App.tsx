@@ -37,6 +37,7 @@ type Booking = {
 
 type AuthResponse = {
   token: string;
+  role: string;
 };
 
 type Page = "admin" | "booking";
@@ -65,11 +66,13 @@ async function request<T>(path: string, token?: string, options?: RequestInit): 
 }
 
 export default function App() {
-  const [page, setPage] = useState<Page>("admin");
+  const [page, setPage] = useState<Page>("booking");
 
   const [token, setToken] = useState(() => localStorage.getItem("jwt") || "");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [role, setRole] = useState(() => localStorage.getItem("role") || "")
+  const isAdmin = role === "ADMIN";
   const isAuthenticated = Boolean(token);
 
   const [areas, setAreas] = useState<Area[]>([]);
@@ -160,7 +163,9 @@ export default function App() {
       });
 
       setToken(response.token);
+      setRole(response.role);
       localStorage.setItem("jwt", response.token);
+      localStorage.setItem("role", response.role);
       setSuccess("Вход выполнен");
       setLoginPassword("");
     } catch (e) {
@@ -173,6 +178,7 @@ export default function App() {
   function logout(showMessage = true) {
     setToken("");
     localStorage.removeItem("jwt");
+    localStorage.removeItem("role");
     setAreas([]);
     setDesks([]);
     setBookings([]);
@@ -350,14 +356,16 @@ export default function App() {
                 <div style={styles.badge}>ENTERA OFFICE BOOKING</div>
                 <h1 style={styles.title}>Управление офисными столами</h1>
                 <p style={styles.subtitle}>
-                  Чистый интерфейс в зелёно-белой палитре для пространств, столов и бронирований.
+                  Бронируй в два клика.
                 </p>
               </div>
 
               <div style={styles.navGroup}>
-                <NavButton active={page === "admin"} onClick={() => setPage("admin")}>
-                  Админка
-                </NavButton>
+                {isAdmin && (
+                    <NavButton active={page === "admin"} onClick={() => setPage("admin")}>
+                      Админка
+                    </NavButton>
+                )}
                 <NavButton active={page === "booking"} onClick={() => setPage("booking")}>
                   Бронирование
                 </NavButton>
