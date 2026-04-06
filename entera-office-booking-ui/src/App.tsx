@@ -39,6 +39,7 @@ type Booking = {
 type AuthResponse = {
   token: string;
   role: string;
+  userId: string;
 };
 
 type Page = "admin" | "booking";
@@ -127,8 +128,10 @@ export default function App() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [role, setRole] = useState(() => localStorage.getItem("role") || "");
+  const [currentUserId, setCurrentUserId] = useState(() => localStorage.getItem("userId") || "");
 
   const isAdmin = role === "ADMIN";
+  const isUser = role === "USER";
   const isAuthenticated = Boolean(token);
 
   const [areas, setAreas] = useState<Area[]>([]);
@@ -276,11 +279,17 @@ export default function App() {
 
       setToken(response.token);
       setRole(response.role);
+      setCurrentUserId(response.userId ?? "");
       localStorage.setItem("jwt", response.token);
       localStorage.setItem("role", response.role);
+      localStorage.setItem("userId", response.userId ?? "");
       setSuccess("Вход выполнен");
       setLoginPassword("");
       setLoginFieldErrors({});
+
+      if (response.role === "USER") {
+        setUserId(response.userId ?? "");
+      }
     } catch (e) {
       applyApiError(e, setLoginFieldErrors, { logoutOnAuth: false });
     } finally {
@@ -291,8 +300,11 @@ export default function App() {
   function logout(showMessage = true) {
     setToken("");
     setRole("");
+    setCurrentUserId("");
+    setUserId("");
     localStorage.removeItem("jwt");
     localStorage.removeItem("role");
+    localStorage.removeItem("userId");
 
     setAreas([]);
     setDesks([]);
@@ -417,10 +429,13 @@ export default function App() {
   async function createBooking() {
     resetRequestState();
 
+    const effectiveUserId = isUser ? currentUserId : userId.trim();
     const clientErrors: FieldErrors = {};
 
-    if (!userId.trim()) {
-      clientErrors.userId = "Введите userId";
+    if (!effectiveUserId) {
+      clientErrors.userId = isUser
+          ? "Не удалось определить текущего пользователя"
+          : "Введите userId";
     }
 
     if (!selectedDeskId) {
@@ -441,7 +456,7 @@ export default function App() {
       await request<Booking>("/bookings", token, {
         method: "POST",
         body: JSON.stringify({
-          userId: userId.trim(),
+          userId: effectiveUserId,
           deskId: selectedDeskId,
         }),
       });
@@ -684,18 +699,32 @@ export default function App() {
                       </p>
                     </div>
 
-                    <div style={styles.fieldBlock}>
-                      <label style={styles.label}>ID пользователя</label>
-                      <input
-                          value={userId}
-                          onChange={(e) => setUserId(e.target.value)}
-                          placeholder="UUID пользователя"
-                          style={getInputStyle(Boolean(bookingFieldErrors.userId))}
-                      />
-                      {bookingFieldErrors.userId && (
-                          <div style={styles.fieldErrorText}>{bookingFieldErrors.userId}</div>
-                      )}
-                    </div>
+                    {isAdmin && (
+                        <div style={styles.fieldBlock}>
+                          <label style={styles.label}>ID пользователя</label>
+                          <input
+                              value={userId}
+                              onChange={(e) => setUserId(e.target.value)}
+                              placeholder="UUID пользователя"
+                              style={getInputStyle(Boolean(bookingFieldErrors.userId))}
+                          />
+                          {bookingFieldErrors.userId && (
+                              <div style={styles.fieldErrorText}>{bookingFieldErrors.userId}</div>
+                          )}
+                        </div>
+                    )}
+
+                    {isUser && (
+                        <div style={styles.fieldBlock}>
+                          <label style={styles.label}>Пользователь</label>
+                          <div style={styles.readonlyField}>
+                            {currentUserId || "Текущий пользователь не определён"}
+                          </div>
+                          {bookingFieldErrors.userId && (
+                              <div style={styles.fieldErrorText}>{bookingFieldErrors.userId}</div>
+                          )}
+                        </div>
+                    )}
                   </div>
 
                   <div style={styles.deskGrid}>
@@ -1064,6 +1093,17 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.45,
     color: DANGER_TEXT,
     marginTop: "2px",
+  },
+  readonlyField: {
+    width: "100%",
+    boxSizing: "border-box",
+    borderRadius: "18px",
+    border: `1px solid ${BORDER_COLOR}`,
+    background: "#f5fdf9",
+    padding: "13px 15px",
+    fontSize: "14px",
+    color: TEXT_PRIMARY,
+    wordBreak: "break-all",
   },
   stackList: {
     display: "flex",
