@@ -1,6 +1,7 @@
 package ru.otus.pw.models;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -37,14 +38,14 @@ public class Booking {
     /**
      * Стол.
      */
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "desk_id", nullable = false)
     private Desk desk;
 
     /**
      * Пользователь.
      */
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private EnteraUser user;
 

@@ -1,6 +1,7 @@
 package ru.otus.pw.models;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -35,7 +36,7 @@ public class Desk {
     /**
      * Пространство.
      */
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private Area area;
 
     /**
