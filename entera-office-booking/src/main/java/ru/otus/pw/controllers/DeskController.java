@@ -1,5 +1,6 @@
 package ru.otus.pw.controllers;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -53,7 +54,7 @@ public class DeskController {
      * @return Созданный стол.
      */
     @PostMapping(value = "/desks")
-    public ResponseEntity<Desk> createDesk(@RequestBody DeskDTO desk) {
+    public ResponseEntity<Desk> createDesk(@RequestBody @Valid DeskDTO desk) {
 
         final Desk savedDesk = this.deskService.create(desk);
 
@@ -68,7 +69,7 @@ public class DeskController {
      * @return Обновляет стол.
      */
     @PutMapping(value = "/desks")
-    public ResponseEntity<Desk> updateDesk(@RequestBody DeskDTO desk) {
+    public ResponseEntity<Desk> updateDesk(@RequestBody @Valid DeskDTO desk) {
 
         final Desk savedDesk = this.deskService.update(desk);
 

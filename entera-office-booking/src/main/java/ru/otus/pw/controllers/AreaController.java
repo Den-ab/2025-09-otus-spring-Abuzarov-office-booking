@@ -1,5 +1,6 @@
 package ru.otus.pw.controllers;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -53,7 +54,7 @@ public class AreaController {
      * @return Созданное пространство.
      */
     @PostMapping(value = "/areas")
-    public ResponseEntity<Area> createArea(@RequestBody AreaDTO area) {
+    public ResponseEntity<Area> createArea(@RequestBody @Valid AreaDTO area) {
 
         final Area savedArea = this.areaService.create(area);
 
@@ -68,7 +69,7 @@ public class AreaController {
      * @return Обновленное пространство.
      */
     @PutMapping(value = "/areas")
-    public ResponseEntity<Area> updateArea(@RequestBody AreaDTO area) {
+    public ResponseEntity<Area> updateArea(@RequestBody @Valid AreaDTO area) {
 
         final Area savedArea = this.areaService.update(area);
 

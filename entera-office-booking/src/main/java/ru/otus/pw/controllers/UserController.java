@@ -1,5 +1,6 @@
 package ru.otus.pw.controllers;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -45,7 +46,7 @@ public class UserController {
      * @return Список пространств.
      */
     @PostMapping(value = "/auth/login")
-    public AuthResponse login(@RequestBody LoginDTO loginDTO) {
+    public AuthResponse login(@RequestBody @Valid LoginDTO loginDTO) {
 
         this.authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(loginDTO.email(), loginDTO.password())

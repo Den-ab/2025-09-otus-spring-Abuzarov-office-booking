@@ -102,8 +102,7 @@ public class SecurityConfig {
                 .requestMatchers("/auth/**").permitAll()
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .formLogin(form -> form.usernameParameter("username").defaultSuccessUrl("/", true));
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
