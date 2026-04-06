@@ -1,5 +1,6 @@
 package ru.otus.pw.controllers;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -52,7 +53,7 @@ public class BookingController {
      * @return Созданное бронирование.
      */
     @PostMapping(value = "/bookings")
-    public ResponseEntity<Booking> bookDesk(@RequestBody BookDeskDTO bookDeskDTO) {
+    public ResponseEntity<Booking> bookDesk(@RequestBody @Valid BookDeskDTO bookDeskDTO) {
 
         final UUID userId = UUID.fromString(bookDeskDTO.userId());
         final UUID deskId = UUID.fromString(bookDeskDTO.deskId());

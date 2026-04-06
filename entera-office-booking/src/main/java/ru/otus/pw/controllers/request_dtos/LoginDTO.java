@@ -9,4 +9,10 @@ import jakarta.validation.constraints.NotBlank;
  * @param email Почта.
  * @param password Пароль.
  */
-public record LoginDTO(@NotBlank @Email String email, @NotBlank String password) {}
+public record LoginDTO(
+    @NotBlank(message = "Email обязателен")
+    @Email(message = "Email некорректный")
+    String email,
+    @NotBlank(message = "Пароль обязателен")
+    String password
+) {}

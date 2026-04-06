@@ -10,4 +10,10 @@ import jakarta.validation.constraints.Positive;
  * @param areaId Идентификатор пространства.
  * @param number Номер стола.
  */
-public record DeskDTO(String id, @NotBlank String areaId, @Positive int number) { }
+public record DeskDTO(
+    String id,
+    @NotBlank(message = "ID пространства обязателен")
+    String areaId,
+    @Positive(message = "Номер стола должен быть положительным")
+    int number
+) { }

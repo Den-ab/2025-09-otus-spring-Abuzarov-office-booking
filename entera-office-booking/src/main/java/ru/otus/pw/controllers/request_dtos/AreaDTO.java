@@ -9,4 +9,9 @@ import jakarta.validation.constraints.Size;
  * @param id Идентификатор.
  * @param name Наименование.
  */
-public record AreaDTO(String id, @NotBlank @Size(max = 255) String name) { }
+public record AreaDTO(
+    String id,
+    @NotBlank(message = "Название пространства обязательно")
+    @Size(max = 255, message = "Название пространства не должно быть длиннее 255 символов")
+    String name
+) { }

@@ -8,4 +8,9 @@ import jakarta.validation.constraints.NotBlank;
  * @param userId Идентификатор пользователя.
  * @param deskId Идентификатор стола.
  */
-public record BookDeskDTO(@NotBlank String userId, @NotBlank String deskId) { }
+public record BookDeskDTO(
+    @NotBlank(message = "ID пользователя обязателен")
+    String userId,
+    @NotBlank(message = "ID стола обязателен")
+    String deskId
+) { }
