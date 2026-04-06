@@ -11,6 +11,7 @@ const TEXT_SECONDARY = "#5e7e75";
 const PAGE_BACKGROUND = "#f4fbf8";
 const DANGER_BG = "#fff1f1";
 const DANGER_TEXT = "#c55050";
+const ERROR_BORDER = "#f2a6a6";
 
 type Area = {
   id: string;
@@ -42,6 +43,26 @@ type AuthResponse = {
 
 type Page = "admin" | "booking";
 
+type FieldErrors = Record<string, string>;
+
+type ApiErrorPayload = {
+  message?: string;
+  fieldErrors?: Record<string, string>;
+  timestamp?: string;
+};
+
+class ApiError extends Error {
+  status: number;
+  fieldErrors: FieldErrors;
+
+  constructor(status: number, message: string, fieldErrors: FieldErrors = {}) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.fieldErrors = fieldErrors;
+  }
+}
+
 async function request<T>(path: string, token?: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
@@ -52,17 +73,51 @@ async function request<T>(path: string, token?: string, options?: RequestInit): 
     ...options,
   });
 
+  const contentType = response.headers.get("content-type") || "";
+
   if (!response.ok) {
+    if (contentType.includes("application/json")) {
+      const body = (await response.json()) as ApiErrorPayload | FieldErrors;
+
+      const normalized = normalizeApiErrorBody(body);
+      throw new ApiError(response.status, normalized.message, normalized.fieldErrors);
+    }
+
     const text = await response.text();
-    throw new Error(text || `HTTP ${response.status}`);
+    throw new ApiError(response.status, text || `HTTP ${response.status}`);
   }
 
-  const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
     return undefined as T;
   }
 
   return response.json() as Promise<T>;
+}
+
+function normalizeApiErrorBody(body: ApiErrorPayload | FieldErrors | null | undefined): {
+  message: string;
+  fieldErrors: FieldErrors;
+} {
+  if (!body || typeof body !== "object") {
+    return {
+      message: "Произошла ошибка",
+      fieldErrors: {},
+    };
+  }
+
+  const typedBody = body as ApiErrorPayload;
+
+  if ("message" in typedBody || "fieldErrors" in typedBody) {
+    return {
+      message: typedBody.message?.trim() || "Произошла ошибка",
+      fieldErrors: typedBody.fieldErrors ?? {},
+    };
+  }
+
+  return {
+    message: "Ошибка валидации",
+    fieldErrors: body as FieldErrors,
+  };
 }
 
 export default function App() {
@@ -71,7 +126,8 @@ export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem("jwt") || "");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [role, setRole] = useState(() => localStorage.getItem("role") || "")
+  const [role, setRole] = useState(() => localStorage.getItem("role") || "");
+
   const isAdmin = role === "ADMIN";
   const isAuthenticated = Boolean(token);
 
@@ -79,8 +135,14 @@ export default function App() {
   const [desks, setDesks] = useState<Desk[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const [loginFieldErrors, setLoginFieldErrors] = useState<FieldErrors>({});
+  const [areaFieldErrors, setAreaFieldErrors] = useState<FieldErrors>({});
+  const [deskFieldErrors, setDeskFieldErrors] = useState<FieldErrors>({});
+  const [bookingFieldErrors, setBookingFieldErrors] = useState<FieldErrors>({});
 
   const [newAreaName, setNewAreaName] = useState("");
   const [deskAreaId, setDeskAreaId] = useState("");
@@ -100,6 +162,49 @@ export default function App() {
       [desks, deskAreaId]
   );
 
+  function clearGlobalMessages() {
+    setError("");
+    setSuccess("");
+  }
+
+  function clearAllFieldErrors() {
+    setLoginFieldErrors({});
+    setAreaFieldErrors({});
+    setDeskFieldErrors({});
+    setBookingFieldErrors({});
+  }
+
+  function resetRequestState() {
+    clearGlobalMessages();
+    clearAllFieldErrors();
+  }
+
+  function applyApiError(
+      e: unknown,
+      setFormFieldErrors?: React.Dispatch<React.SetStateAction<FieldErrors>>,
+      options?: { logoutOnAuth?: boolean }
+  ) {
+    const logoutOnAuth = options?.logoutOnAuth ?? true;
+
+    if (e instanceof ApiError) {
+      setError(e.message);
+      setSuccess("");
+
+      if (setFormFieldErrors) {
+        setFormFieldErrors(e.fieldErrors ?? {});
+      }
+
+      if (logoutOnAuth && (e.status === 401 || e.status === 403)) {
+        logout(false);
+      }
+
+      return;
+    }
+
+    setError(getErrorMessage(e));
+    setSuccess("");
+  }
+
   async function loadAll(currentToken = token) {
     if (!currentToken) {
       return;
@@ -107,7 +212,7 @@ export default function App() {
 
     try {
       setLoading(true);
-      setError("");
+      clearGlobalMessages();
 
       const [areasData, desksData, bookingsData] = await Promise.all([
         request<Area[]>("/areas", currentToken),
@@ -122,16 +227,12 @@ export default function App() {
       if (!deskAreaId && areasData?.length) {
         setDeskAreaId(areasData[0].id);
       }
+
       if (!selectedDeskId && desksData?.length) {
         setSelectedDeskId(desksData[0].id);
       }
     } catch (e) {
-      const message = getErrorMessage(e);
-      setError(message);
-
-      if (message.includes("401") || message.includes("403")) {
-        logout(false);
-      }
+      applyApiError(e, undefined, { logoutOnAuth: true });
     } finally {
       setLoading(false);
     }
@@ -144,15 +245,26 @@ export default function App() {
   }, [token]);
 
   async function login() {
-    if (!loginEmail.trim() || !loginPassword.trim()) {
-      setError("Введите email и пароль");
+    resetRequestState();
+
+    const clientErrors: FieldErrors = {};
+
+    if (!loginEmail.trim()) {
+      clientErrors.email = "Введите email";
+    }
+
+    if (!loginPassword.trim()) {
+      clientErrors.password = "Введите пароль";
+    }
+
+    if (Object.keys(clientErrors).length > 0) {
+      setLoginFieldErrors(clientErrors);
+      setError("Проверьте поля формы");
       return;
     }
 
     try {
       setLoading(true);
-      setError("");
-      setSuccess("");
 
       const response = await request<AuthResponse>("/auth/login", undefined, {
         method: "POST",
@@ -168,8 +280,9 @@ export default function App() {
       localStorage.setItem("role", response.role);
       setSuccess("Вход выполнен");
       setLoginPassword("");
+      setLoginFieldErrors({});
     } catch (e) {
-      setError(getErrorMessage(e));
+      applyApiError(e, setLoginFieldErrors, { logoutOnAuth: false });
     } finally {
       setLoading(false);
     }
@@ -177,128 +290,166 @@ export default function App() {
 
   function logout(showMessage = true) {
     setToken("");
+    setRole("");
     localStorage.removeItem("jwt");
     localStorage.removeItem("role");
+
     setAreas([]);
     setDesks([]);
     setBookings([]);
     setSelectedDeskId("");
     setDeskAreaId("");
-    setSuccess(showMessage ? "Вы вышли из системы" : "");
+    clearAllFieldErrors();
     setError("");
+    setSuccess(showMessage ? "Вы вышли из системы" : "");
   }
 
   async function createArea() {
+    resetRequestState();
+
+    const clientErrors: FieldErrors = {};
+
     if (!newAreaName.trim()) {
-      setError("Введите название пространства");
+      clientErrors.name = "Введите название пространства";
+    }
+
+    if (Object.keys(clientErrors).length > 0) {
+      setAreaFieldErrors(clientErrors);
+      setError("Проверьте поля формы");
       return;
     }
 
     try {
-      setError("");
-      setSuccess("");
       await request<Area>("/areas", token, {
         method: "POST",
         body: JSON.stringify({ id: null, name: newAreaName.trim() }),
       });
+
       setNewAreaName("");
       setSuccess("Пространство создано");
       await loadAll();
     } catch (e) {
-      setError(getErrorMessage(e));
+      applyApiError(e, setAreaFieldErrors);
     }
   }
 
   async function deleteArea(id: string) {
+    resetRequestState();
+
     try {
-      setError("");
-      setSuccess("");
       await request<void>(`/areas/${id}`, token, { method: "DELETE" });
       setSuccess("Пространство удалено");
       await loadAll();
     } catch (e) {
-      setError(getErrorMessage(e));
+      applyApiError(e);
     }
   }
 
   async function createDesk() {
+    resetRequestState();
+
+    const clientErrors: FieldErrors = {};
+
     if (!deskAreaId) {
-      setError("Выберите пространство");
-      return;
+      clientErrors.areaId = "Выберите пространство";
     }
 
     if (!deskNumber.trim()) {
-      setError("Введите номер стола");
-      return;
+      clientErrors.number = "Введите номер стола";
+    } else {
+      const parsedNumber = Number(deskNumber);
+
+      if (Number.isNaN(parsedNumber)) {
+        clientErrors.number = "Номер стола должен быть числом";
+      } else if (parsedNumber <= 0) {
+        clientErrors.number = "Номер стола должен быть больше 0";
+      }
     }
 
-    const parsedNumber = Number(deskNumber);
-    if (Number.isNaN(parsedNumber)) {
-      setError("Номер стола должен быть числом");
+    if (Object.keys(clientErrors).length > 0) {
+      setDeskFieldErrors(clientErrors);
+      setError("Проверьте поля формы");
       return;
     }
 
     try {
-      setError("");
-      setSuccess("");
       await request<Desk>("/desks", token, {
         method: "POST",
-        body: JSON.stringify({ id: null, areaId: deskAreaId, number: parsedNumber }),
+        body: JSON.stringify({
+          id: null,
+          areaId: deskAreaId,
+          number: Number(deskNumber),
+        }),
       });
+
       setDeskNumber("");
       setSuccess("Стол создан");
       await loadAll();
     } catch (e) {
-      setError(getErrorMessage(e));
+      applyApiError(e, setDeskFieldErrors);
     }
   }
 
   async function deleteDesk(id: string) {
+    resetRequestState();
+
     try {
-      setError("");
-      setSuccess("");
       await request<void>(`/desks/${id}`, token, { method: "DELETE" });
       setSuccess("Стол удалён");
       await loadAll();
     } catch (e) {
-      setError(getErrorMessage(e));
+      applyApiError(e);
     }
   }
 
   async function deleteBooking(id: string) {
+    resetRequestState();
+
     try {
-      setError("");
-      setSuccess("");
       await request<void>(`/bookings/${id}`, token, { method: "DELETE" });
       setSuccess("Бронирование удалено");
       await loadAll();
     } catch (e) {
-      setError(getErrorMessage(e));
+      applyApiError(e);
     }
   }
 
   async function createBooking() {
+    resetRequestState();
+
+    const clientErrors: FieldErrors = {};
+
     if (!userId.trim()) {
-      setError("Введите userId");
-      return;
+      clientErrors.userId = "Введите userId";
     }
 
     if (!selectedDeskId) {
-      setError("Выберите стол");
+      clientErrors.deskId = "Выберите стол";
+    }
+
+    if (!bookingDate) {
+      clientErrors.date = "Выберите дату";
+    }
+
+    if (Object.keys(clientErrors).length > 0) {
+      setBookingFieldErrors(clientErrors);
+      setError("Проверьте поля формы");
       return;
     }
 
     try {
-      setError("");
-      setSuccess("");
       await request<Booking>("/bookings", token, {
         method: "POST",
-        body: JSON.stringify({ userId: userId.trim(), deskId: selectedDeskId }),
+        body: JSON.stringify({
+          userId: userId.trim(),
+          deskId: selectedDeskId,
+        }),
       });
+
       setSuccess("Стол забронирован");
       await loadAll();
     } catch (e) {
-      setError(getErrorMessage(e));
+      applyApiError(e, setBookingFieldErrors);
     }
   }
 
@@ -317,25 +468,35 @@ export default function App() {
               {success && <div style={styles.successBanner}>{success}</div>}
 
               <div style={styles.formColumn}>
-                <input
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="Email"
-                    style={styles.input}
-                />
+                <div style={styles.fieldBlock}>
+                  <input
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="Email"
+                      style={getInputStyle(Boolean(loginFieldErrors.email))}
+                  />
+                  {loginFieldErrors.email && (
+                      <div style={styles.fieldErrorText}>{loginFieldErrors.email}</div>
+                  )}
+                </div>
 
-                <input
-                    type="password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="Пароль"
-                    style={styles.input}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        login();
-                      }
-                    }}
-                />
+                <div style={styles.fieldBlock}>
+                  <input
+                      type="password"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="Пароль"
+                      style={getInputStyle(Boolean(loginFieldErrors.password))}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          login();
+                        }
+                      }}
+                  />
+                  {loginFieldErrors.password && (
+                      <div style={styles.fieldErrorText}>{loginFieldErrors.password}</div>
+                  )}
+                </div>
 
                 <button onClick={login} style={styles.bookButton} disabled={loading}>
                   {loading ? "Входим..." : "Войти"}
@@ -355,9 +516,7 @@ export default function App() {
               <div>
                 <div style={styles.badge}>ENTERA OFFICE BOOKING</div>
                 <h1 style={styles.title}>Управление офисными столами</h1>
-                <p style={styles.subtitle}>
-                  Бронируй в два клика.
-                </p>
+                <p style={styles.subtitle}>Бронируй в два клика.</p>
               </div>
 
               <div style={styles.navGroup}>
@@ -389,16 +548,22 @@ export default function App() {
           {page === "admin" ? (
               <div style={styles.gridThree}>
                 <Card title="Пространства">
-                  <div style={styles.inlineForm}>
-                    <input
-                        value={newAreaName}
-                        onChange={(e) => setNewAreaName(e.target.value)}
-                        placeholder="Название пространства"
-                        style={styles.input}
-                    />
-                    <button onClick={createArea} style={styles.primaryButton}>
-                      Создать
-                    </button>
+                  <div style={styles.formColumn}>
+                    <div style={styles.inlineForm}>
+                      <input
+                          value={newAreaName}
+                          onChange={(e) => setNewAreaName(e.target.value)}
+                          placeholder="Название пространства"
+                          style={getInputStyle(Boolean(areaFieldErrors.name))}
+                      />
+                      <button onClick={createArea} style={styles.primaryButton}>
+                        Создать
+                      </button>
+                    </div>
+
+                    {areaFieldErrors.name && (
+                        <div style={styles.fieldErrorText}>{areaFieldErrors.name}</div>
+                    )}
                   </div>
 
                   <div style={styles.stackList}>
@@ -419,30 +584,39 @@ export default function App() {
 
                 <Card title="Столы">
                   <div style={styles.formColumn}>
-                    <select
-                        value={deskAreaId}
-                        onChange={(e) => setDeskAreaId(e.target.value)}
-                        style={styles.input}
-                    >
-                      <option value="">Выбери пространство</option>
-                      {areas.map((area) => (
-                          <option key={area.id} value={area.id}>
-                            {area.name}
-                          </option>
-                      ))}
-                    </select>
+                    <div style={styles.fieldBlock}>
+                      <select
+                          value={deskAreaId}
+                          onChange={(e) => setDeskAreaId(e.target.value)}
+                          style={getInputStyle(Boolean(deskFieldErrors.areaId))}
+                      >
+                        <option value="">Выбери пространство</option>
+                        {areas.map((area) => (
+                            <option key={area.id} value={area.id}>
+                              {area.name}
+                            </option>
+                        ))}
+                      </select>
+                      {deskFieldErrors.areaId && (
+                          <div style={styles.fieldErrorText}>{deskFieldErrors.areaId}</div>
+                      )}
+                    </div>
 
                     <div style={styles.inlineForm}>
                       <input
                           value={deskNumber}
                           onChange={(e) => setDeskNumber(e.target.value)}
                           placeholder="Номер стола"
-                          style={styles.input}
+                          style={getInputStyle(Boolean(deskFieldErrors.number))}
                       />
                       <button onClick={createDesk} style={styles.primaryButton}>
                         Создать
                       </button>
                     </div>
+
+                    {deskFieldErrors.number && (
+                        <div style={styles.fieldErrorText}>{deskFieldErrors.number}</div>
+                    )}
                   </div>
 
                   <div style={styles.stackList}>
@@ -454,7 +628,9 @@ export default function App() {
                         <div key={desk.id} style={styles.itemCard}>
                           <div>
                             <div style={styles.itemTitle}>Стол #{desk.number}</div>
-                            <div style={styles.itemSecondary}>Пространство: {desk.area?.name ?? "—"}</div>
+                            <div style={styles.itemSecondary}>
+                              Пространство: {desk.area?.name ?? "—"}
+                            </div>
                             <div style={styles.itemMeta}>{desk.id}</div>
                           </div>
                           <button onClick={() => deleteDesk(desk.id)} style={styles.dangerButton}>
@@ -477,7 +653,10 @@ export default function App() {
                             <div>Пользователь: {booking.user?.id ?? "—"}</div>
                             <div>Дата: {formatDateTime(booking.date)}</div>
                           </div>
-                          <button onClick={() => deleteBooking(booking.id)} style={styles.dangerButtonWide}>
+                          <button
+                              onClick={() => deleteBooking(booking.id)}
+                              style={styles.dangerButtonWide}
+                          >
                             Удалить бронирование
                           </button>
                         </div>
@@ -495,8 +674,11 @@ export default function App() {
                           type="date"
                           value={bookingDate}
                           onChange={(e) => setBookingDate(e.target.value)}
-                          style={styles.input}
+                          style={getInputStyle(Boolean(bookingFieldErrors.date))}
                       />
+                      {bookingFieldErrors.date && (
+                          <div style={styles.fieldErrorText}>{bookingFieldErrors.date}</div>
+                      )}
                       <p style={styles.helperText}>
                         Поле даты отображается в UI, но текущий backend его не принимает.
                       </p>
@@ -508,8 +690,11 @@ export default function App() {
                           value={userId}
                           onChange={(e) => setUserId(e.target.value)}
                           placeholder="UUID пользователя"
-                          style={styles.input}
+                          style={getInputStyle(Boolean(bookingFieldErrors.userId))}
                       />
+                      {bookingFieldErrors.userId && (
+                          <div style={styles.fieldErrorText}>{bookingFieldErrors.userId}</div>
+                      )}
                     </div>
                   </div>
 
@@ -526,6 +711,7 @@ export default function App() {
                               style={{
                                 ...styles.deskTile,
                                 ...(isSelected ? styles.deskTileActive : {}),
+                                ...(bookingFieldErrors.deskId ? styles.deskTileErrorOutline : {}),
                               }}
                           >
                             <div style={styles.deskTileHeader}>
@@ -534,12 +720,20 @@ export default function App() {
                           {hasBooking ? "Занят" : "Свободен"}
                         </span>
                             </div>
-                            <div style={styles.itemSecondary}>Пространство: {desk.area?.name ?? "—"}</div>
+                            <div style={styles.itemSecondary}>
+                              Пространство: {desk.area?.name ?? "—"}
+                            </div>
                             <div style={styles.itemMeta}>{desk.id}</div>
                           </button>
                       );
                     })}
                   </div>
+
+                  {bookingFieldErrors.deskId && (
+                      <div style={{ ...styles.fieldErrorText, marginTop: "12px" }}>
+                        {bookingFieldErrors.deskId}
+                      </div>
+                  )}
                 </Card>
 
                 <Card title="Панель бронирования">
@@ -549,7 +743,9 @@ export default function App() {
                       <div style={styles.selectedDeskTitle}>
                         {selectedDesk ? `Стол #${selectedDesk.number}` : "Стол не выбран"}
                       </div>
-                      <div style={styles.itemSecondary}>Пространство: {selectedDesk?.area?.name ?? "—"}</div>
+                      <div style={styles.itemSecondary}>
+                        Пространство: {selectedDesk?.area?.name ?? "—"}
+                      </div>
                       <div style={styles.itemSecondary}>Дата: {bookingDate || "—"}</div>
                     </div>
 
@@ -564,8 +760,12 @@ export default function App() {
                         {bookings.map((booking) => (
                             <div key={booking.id} style={styles.itemSoftCard}>
                               <div style={styles.itemTitle}>Стол #{booking.desk?.number ?? "—"}</div>
-                              <div style={styles.itemSecondary}>Пространство: {booking.desk?.area?.name ?? "—"}</div>
-                              <div style={styles.itemMeta}>Пользователь: {booking.user?.id ?? "—"}</div>
+                              <div style={styles.itemSecondary}>
+                                Пространство: {booking.desk?.area?.name ?? "—"}
+                              </div>
+                              <div style={styles.itemMeta}>
+                                Пользователь: {booking.user?.id ?? "—"}
+                              </div>
                               <div style={styles.itemMeta}>Дата: {formatDateTime(booking.date)}</div>
                             </div>
                         ))}
@@ -629,10 +829,22 @@ function formatDateTime(value?: string) {
 }
 
 function getErrorMessage(error: unknown) {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+
   if (error instanceof Error) {
     return error.message;
   }
+
   return "Произошла ошибка";
+}
+
+function getInputStyle(hasError: boolean): React.CSSProperties {
+  return {
+    ...styles.input,
+    ...(hasError ? styles.inputError : {}),
+  };
 }
 
 const styles: Record<string, React.CSSProperties> = {
@@ -823,7 +1035,7 @@ const styles: Record<string, React.CSSProperties> = {
   inlineForm: {
     display: "flex",
     gap: "10px",
-    marginBottom: "18px",
+    marginBottom: "6px",
     flexWrap: "wrap",
   },
   formColumn: {
@@ -841,6 +1053,17 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "14px",
     color: TEXT_PRIMARY,
     outline: "none",
+  },
+  inputError: {
+    border: `1px solid ${ERROR_BORDER}`,
+    background: "#fffafa",
+    boxShadow: "0 0 0 3px rgba(197, 80, 80, 0.08)",
+  },
+  fieldErrorText: {
+    fontSize: "12px",
+    lineHeight: 1.45,
+    color: DANGER_TEXT,
+    marginTop: "2px",
   },
   stackList: {
     display: "flex",
@@ -932,6 +1155,9 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${GREEN_COLOR}`,
     background: LIGHT_GREEN,
     boxShadow: "0 16px 30px rgba(0, 180, 130, 0.14)",
+  },
+  deskTileErrorOutline: {
+    border: `1px solid ${ERROR_BORDER}`,
   },
   deskTileHeader: {
     display: "flex",
