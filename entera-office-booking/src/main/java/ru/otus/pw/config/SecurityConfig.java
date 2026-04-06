@@ -100,6 +100,13 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/auth/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/areas").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/areas").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/areas").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/desks").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/desks").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/desks").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/bookings").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
