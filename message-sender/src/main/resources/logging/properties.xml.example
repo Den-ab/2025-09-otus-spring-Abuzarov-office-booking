@@ -1,0 +1,15 @@
+<included>
+    <!-- Включение логирования в консоль. -->
+    <property name="console.log.enabled" value="true" />
+    <!--region SQL properties-->
+    <!--region SQL log-->
+    <property name="sql.log.enabled" value="false" />
+    <property name="sql.log.additional" value="false" />
+    <property name="sql.log.level" value="TRACE" />
+    <!--endregion-->
+    <!--region Flyway log-->
+    <property name="flywaydb.log.enabled" value="false" />
+    <property name="flywaydb.log.level" value="TRACE" />
+    <!--endregion-->
+    <!--endregion-->
+</included>
