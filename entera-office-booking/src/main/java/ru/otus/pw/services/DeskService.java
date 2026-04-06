@@ -81,7 +81,7 @@ public class DeskService {
      */
     public void delete(UUID areaId) {
 
-        this.areaRepository.deleteById(areaId);
+        this.deskRepository.deleteById(areaId);
     }
 
     /**
