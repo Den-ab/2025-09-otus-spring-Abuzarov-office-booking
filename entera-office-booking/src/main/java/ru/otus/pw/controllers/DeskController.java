@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import ru.otus.pw.controllers.request_dtos.DeskDTO;
+import ru.otus.pw.controllers.response_dtos.DeskResponseDTO;
 import ru.otus.pw.models.Desk;
 import ru.otus.pw.services.DeskService;
 
@@ -39,9 +40,9 @@ public class DeskController {
      * @return Список столов.
      */
     @GetMapping(value = "/desks")
-    public ResponseEntity<List<Desk>> findAllDesks() {
+    public ResponseEntity<List<DeskResponseDTO>> findAllDesks() {
 
-        final List<Desk> desks = this.deskService.findAll();
+        final List<DeskResponseDTO> desks = this.deskService.findAll();
 
         return ResponseEntity.ok(desks);
     }
@@ -54,9 +55,9 @@ public class DeskController {
      * @return Созданный стол.
      */
     @PostMapping(value = "/desks")
-    public ResponseEntity<Desk> createDesk(@RequestBody @Valid DeskDTO desk) {
+    public ResponseEntity<DeskResponseDTO> createDesk(@RequestBody @Valid DeskDTO desk) {
 
-        final Desk savedDesk = this.deskService.create(desk);
+        final DeskResponseDTO savedDesk = this.deskService.create(desk);
 
         return ResponseEntity.ok(savedDesk);
     }
@@ -69,9 +70,9 @@ public class DeskController {
      * @return Обновляет стол.
      */
     @PutMapping(value = "/desks")
-    public ResponseEntity<Desk> updateDesk(@RequestBody @Valid DeskDTO desk) {
+    public ResponseEntity<DeskResponseDTO> updateDesk(@RequestBody @Valid DeskDTO desk) {
 
-        final Desk savedDesk = this.deskService.update(desk);
+        final DeskResponseDTO savedDesk = this.deskService.update(desk);
 
         return ResponseEntity.ok(savedDesk);
     }

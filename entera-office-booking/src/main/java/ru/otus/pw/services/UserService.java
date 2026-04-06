@@ -2,10 +2,10 @@ package ru.otus.pw.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.otus.pw.controllers.response_dtos.UserResponseDTO;
 import ru.otus.pw.models.EnteraUser;
 import ru.otus.pw.repositories.EnteraUserRepository;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -25,25 +25,48 @@ public class UserService {
     //region Public
 
     /**
-     * Возвращает всех пользователей.
-     *
-     * @return Пользователи.
-     */
-    public List<EnteraUser> findAll() {
-
-        return this.userRepository.findAll();
-    }
-
-    /**
      * Возвращает пользователя по логину.
      *
      * @param email Почта.
      *
      * @return Пользователь.
      */
-    public Optional<EnteraUser> findByEmail(String email) {
+    public Optional<UserResponseDTO> findByEmail(String email) {
+
+        return this.userRepository.findByEmail(email).map(this::toResponseDto);
+    }
+
+    /**
+     * Возвращает сущность пользователя по логину.
+     *
+     * @param email Почта.
+     *
+     * @return Сущность пользователя.
+     */
+    public Optional<EnteraUser> findEntityByEmail(String email) {
 
         return this.userRepository.findByEmail(email);
+    }
+
+    //endregion
+    //region Private
+
+    /**
+     * Преобразует сущность пользователя в DTO.
+     *
+     * @param user Пользователь.
+     *
+     * @return DTO пользователя.
+     */
+    private UserResponseDTO toResponseDto(EnteraUser user) {
+
+        return new UserResponseDTO(
+            user.getId() != null ? user.getId().toString() : null,
+            user.getEmail(),
+            user.getFirstName(),
+            user.getLastName(),
+            user.getRole() != null ? user.getRole().name() : null
+        );
     }
 
     //endregion

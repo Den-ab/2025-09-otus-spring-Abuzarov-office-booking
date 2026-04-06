@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import ru.otus.pw.controllers.request_dtos.BookDeskDTO;
-import ru.otus.pw.models.Booking;
+import ru.otus.pw.controllers.response_dtos.BookingResponseDTO;
 import ru.otus.pw.services.BookingService;
 
 import java.util.List;
@@ -38,9 +38,9 @@ public class BookingController {
      * @return Список бронирований.
      */
     @GetMapping(value = "/bookings")
-    public ResponseEntity<List<Booking>> findAllBookings() {
+    public ResponseEntity<List<BookingResponseDTO>> findAllBookings() {
 
-        final List<Booking> bookings = this.bookingService.findAll();
+        final List<BookingResponseDTO> bookings = this.bookingService.findAll();
 
         return ResponseEntity.ok(bookings);
     }
@@ -53,12 +53,12 @@ public class BookingController {
      * @return Созданное бронирование.
      */
     @PostMapping(value = "/bookings")
-    public ResponseEntity<Booking> bookDesk(@RequestBody @Valid BookDeskDTO bookDeskDTO) {
+    public ResponseEntity<BookingResponseDTO> bookDesk(@RequestBody @Valid BookDeskDTO bookDeskDTO) {
 
         final UUID userId = UUID.fromString(bookDeskDTO.userId());
         final UUID deskId = UUID.fromString(bookDeskDTO.deskId());
 
-        final Booking booking = this.bookingService.bookDesk(userId, deskId);
+        final BookingResponseDTO booking = this.bookingService.bookDesk(userId, deskId);
 
         return ResponseEntity.ok(booking);
     }

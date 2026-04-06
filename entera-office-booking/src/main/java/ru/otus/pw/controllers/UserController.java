@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import ru.otus.pw.controllers.request_dtos.LoginDTO;
 import ru.otus.pw.controllers.response_dtos.AuthResponse;
+import ru.otus.pw.controllers.response_dtos.UserResponseDTO;
 import ru.otus.pw.models.EnteraUser;
 import ru.otus.pw.services.EnteraUserDetailsService;
 import ru.otus.pw.services.JwtService;
@@ -59,7 +60,7 @@ public class UserController {
             new UsernamePasswordAuthenticationToken(loginDTO.email(), loginDTO.password())
         );
 
-        final EnteraUser enteraUser = this.userService.findByEmail(loginDTO.email())
+        final UserResponseDTO enteraUser = this.userService.findByEmail(loginDTO.email())
             .orElseThrow(() -> new IllegalStateException("Can't find user with email " + loginDTO.email()));
 
         UserDetails userDetails = this.enteraUserDetailsService.loadUserByUsername(loginDTO.email());
@@ -70,7 +71,7 @@ public class UserController {
             .map(authority -> authority.replace("ROLE_", ""))
             .orElse("USER");
 
-        return new AuthResponse(enteraUser.getId().toString(), token, role);
+        return new AuthResponse(enteraUser.id(), token, role);
     }
 
     //endregion

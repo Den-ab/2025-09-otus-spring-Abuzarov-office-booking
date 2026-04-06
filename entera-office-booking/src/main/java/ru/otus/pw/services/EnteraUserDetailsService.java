@@ -26,7 +26,7 @@ public class EnteraUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
 
-        return this.userService.findByEmail(email)
+        return this.userService.findEntityByEmail(email)
             .map(user -> User.builder()
                 .username(user.getEmail())
                 .password(user.getPassword())

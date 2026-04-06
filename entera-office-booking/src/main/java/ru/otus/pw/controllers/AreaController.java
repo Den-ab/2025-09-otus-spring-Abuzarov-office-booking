@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import ru.otus.pw.controllers.request_dtos.AreaDTO;
-import ru.otus.pw.models.Area;
+import ru.otus.pw.controllers.response_dtos.AreaResponseDTO;
 import ru.otus.pw.services.AreaService;
 
 import java.util.List;
@@ -39,9 +39,9 @@ public class AreaController {
      * @return Список пространств.
      */
     @GetMapping(value = "/areas")
-    public ResponseEntity<List<Area>> findAllAreas() {
+    public ResponseEntity<List<AreaResponseDTO>> findAllAreas() {
 
-        final List<Area> areas = this.areaService.findAll();
+        final List<AreaResponseDTO> areas = this.areaService.findAll();
 
         return ResponseEntity.ok(areas);
     }
@@ -54,9 +54,9 @@ public class AreaController {
      * @return Созданное пространство.
      */
     @PostMapping(value = "/areas")
-    public ResponseEntity<Area> createArea(@RequestBody @Valid AreaDTO area) {
+    public ResponseEntity<AreaResponseDTO> createArea(@RequestBody @Valid AreaDTO area) {
 
-        final Area savedArea = this.areaService.create(area);
+        final AreaResponseDTO savedArea = this.areaService.create(area);
 
         return ResponseEntity.ok(savedArea);
     }
@@ -69,9 +69,9 @@ public class AreaController {
      * @return Обновленное пространство.
      */
     @PutMapping(value = "/areas")
-    public ResponseEntity<Area> updateArea(@RequestBody @Valid AreaDTO area) {
+    public ResponseEntity<AreaResponseDTO> updateArea(@RequestBody @Valid AreaDTO area) {
 
-        final Area savedArea = this.areaService.update(area);
+        final AreaResponseDTO savedArea = this.areaService.update(area);
 
         return ResponseEntity.ok(savedArea);
     }

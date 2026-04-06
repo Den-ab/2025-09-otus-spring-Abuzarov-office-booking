@@ -4,6 +4,8 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.otus.pw.controllers.request_dtos.DeskDTO;
+import ru.otus.pw.controllers.response_dtos.DeskAreaResponseDTO;
+import ru.otus.pw.controllers.response_dtos.DeskResponseDTO;
 import ru.otus.pw.models.Area;
 import ru.otus.pw.models.Desk;
 import ru.otus.pw.repositories.AreaRepository;
@@ -38,9 +40,9 @@ public class DeskService {
      *
      * @return Список столов.
      */
-    public List<Desk> findAll() {
+    public List<DeskResponseDTO> findAll() {
 
-        return this.deskRepository.findAll();
+        return this.deskRepository.findAll().stream().map(this::toResponseDto).toList();
     }
 
     /**
@@ -50,7 +52,7 @@ public class DeskService {
      *
      * @return Созданный стол.
      */
-    public Desk create(DeskDTO deskDTO) {
+    public DeskResponseDTO create(DeskDTO deskDTO) {
 
         final UUID areaId = UUID.fromString(deskDTO.areaId());
         final int number = deskDTO.number();
@@ -65,7 +67,7 @@ public class DeskService {
      *
      * @return Обновляет стол.
      */
-    public Desk update(DeskDTO deskDTO) {
+    public DeskResponseDTO update(DeskDTO deskDTO) {
 
         final UUID areaId = UUID.fromString(deskDTO.areaId());
         final UUID deskId = UUID.fromString(deskDTO.id());
@@ -84,6 +86,8 @@ public class DeskService {
         this.deskRepository.deleteById(areaId);
     }
 
+    //region Private
+
     /**
      * Сохраняет стол.
      * Если идентификатор нулловый, то значит будет создание стола. Иначе - обновление.
@@ -94,12 +98,35 @@ public class DeskService {
      *
      * @return Сохраненное стол.
      */
-    private Desk save(UUID id, UUID areaId, int number) {
+    private DeskResponseDTO save(UUID id, UUID areaId, int number) {
 
-        Area area = this.areaRepository.findById(areaId).orElseThrow(() ->
-            new EntityNotFoundException("Area with id %s not found".formatted(areaId))
-        );
+        Area area = this.areaRepository.findById(areaId)
+            .orElseThrow(() -> new EntityNotFoundException("Area with id %s not found".formatted(areaId)));
+        final Desk saved = this.deskRepository.save(Desk.builder().id(id).number(number).area(area).build());
 
-        return this.deskRepository.save(Desk.builder().id(id).number(number).area(area).build());
+        return this.toResponseDto(saved);
     }
+
+    /**
+     * Преобразует сущность стола в DTO.
+     *
+     * @param desk Стол.
+     *
+     * @return DTO стола.
+     */
+    private DeskResponseDTO toResponseDto(Desk desk) {
+
+        return new DeskResponseDTO(
+            desk.getId() != null ? desk.getId().toString() : null,
+            desk.getNumber(),
+            desk.getArea() == null
+                ? null
+                : new DeskAreaResponseDTO(
+                desk.getArea().getId() != null ? desk.getArea().getId().toString() : null,
+                desk.getArea().getName()
+            )
+        );
+    }
+
+    //endregion
 }

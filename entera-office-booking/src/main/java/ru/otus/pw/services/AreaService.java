@@ -3,6 +3,7 @@ package ru.otus.pw.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.otus.pw.controllers.request_dtos.AreaDTO;
+import ru.otus.pw.controllers.response_dtos.AreaResponseDTO;
 import ru.otus.pw.models.Area;
 import ru.otus.pw.repositories.AreaRepository;
 
@@ -30,9 +31,9 @@ public class AreaService {
      *
      * @return Список пространств.
      */
-    public List<Area> findAll() {
+    public List<AreaResponseDTO> findAll() {
 
-        return this.areaRepository.findAll();
+        return this.areaRepository.findAll().stream().map(this::toResponseDto).toList();
     }
 
     /**
@@ -42,7 +43,7 @@ public class AreaService {
      *
      * @return Созданное пространство.
      */
-    public Area create(AreaDTO area) {
+    public AreaResponseDTO create(AreaDTO area) {
 
         return this.save(null, area.name());
     }
@@ -54,7 +55,7 @@ public class AreaService {
      *
      * @return Обновленное пространство.
      */
-    public Area update(AreaDTO area) {
+    public AreaResponseDTO update(AreaDTO area) {
 
         final UUID areaId = UUID.fromString(area.id());
 
@@ -83,9 +84,25 @@ public class AreaService {
      *
      * @return Сохраненное пространство.
      */
-    private Area save(UUID areaId, String name) {
+    private AreaResponseDTO save(UUID areaId, String name) {
 
-        return this.areaRepository.save(Area.builder().id(areaId).name(name).build());
+        final Area saved = this.areaRepository.save(Area.builder().id(areaId).name(name).build());
+        return this.toResponseDto(saved);
+    }
+
+    /**
+     * Преобразует сущность пространства в DTO.
+     *
+     * @param area Пространство.
+     *
+     * @return DTO пространства.
+     */
+    private AreaResponseDTO toResponseDto(Area area) {
+
+        return new AreaResponseDTO(
+            area.getId() != null ? area.getId().toString() : null,
+            area.getName()
+        );
     }
 
     //endregion

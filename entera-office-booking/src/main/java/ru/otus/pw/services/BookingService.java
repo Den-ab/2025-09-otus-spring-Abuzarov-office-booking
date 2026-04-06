@@ -2,6 +2,10 @@ package ru.otus.pw.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.otus.pw.controllers.response_dtos.BookingDeskResponseDTO;
+import ru.otus.pw.controllers.response_dtos.BookingResponseDTO;
+import ru.otus.pw.controllers.response_dtos.BookingUserResponseDTO;
+import ru.otus.pw.controllers.response_dtos.DeskAreaResponseDTO;
 import ru.otus.pw.models.Booking;
 import ru.otus.pw.models.Desk;
 import ru.otus.pw.models.EnteraUser;
@@ -53,9 +57,9 @@ public class BookingService {
      *
      * @return Список бронирований.
      */
-    public List<Booking> findAll() {
+    public List<BookingResponseDTO> findAll() {
 
-        return this.bookingRepository.findAll();
+        return this.bookingRepository.findAll().stream().map(this::toResponseDto).toList();
     }
 
     /**
@@ -66,7 +70,7 @@ public class BookingService {
      *
      * @return Созданное бронирование.
      */
-    public Booking bookDesk(UUID userId, UUID deskId) {
+    public BookingResponseDTO bookDesk(UUID userId, UUID deskId) {
         final Instant now = Instant.now();
         final ZoneId zoneId = ZoneId.systemDefault();
         final LocalDate today = now.atZone(zoneId).toLocalDate();
@@ -89,7 +93,7 @@ public class BookingService {
             desk.get().getNumber(),
             today.format(DateTimeFormatter.ISO_LOCAL_DATE)
         );
-        return savedBook;
+        return this.toResponseDto(savedBook);
     }
 
     /**
@@ -100,6 +104,42 @@ public class BookingService {
     public void delete(UUID bookingId) {
 
         this.bookingRepository.deleteById(bookingId);
+    }
+
+    //endregion
+    //region Private
+
+    /**
+     * Преобразует сущность бронирования в DTO.
+     *
+     * @param booking Бронирование.
+     *
+     * @return DTO бронирования.
+     */
+    private BookingResponseDTO toResponseDto(Booking booking) {
+        return new BookingResponseDTO(
+            booking.getId() != null ? booking.getId().toString() : null,
+            booking.getDate() != null ? booking.getDate().toString() : null,
+            booking.getUser() == null
+                ? null
+                : new BookingUserResponseDTO(
+                booking.getUser().getId() != null ? booking.getUser().getId().toString() : null
+            ),
+            booking.getDesk() == null
+                ? null
+                : new BookingDeskResponseDTO(
+                booking.getDesk().getId() != null ? booking.getDesk().getId().toString() : null,
+                booking.getDesk().getNumber(),
+                booking.getDesk().getArea() == null
+                    ? null
+                    : new DeskAreaResponseDTO(
+                    booking.getDesk().getArea().getId() != null
+                        ? booking.getDesk().getArea().getId().toString()
+                        : null,
+                    booking.getDesk().getArea().getName()
+                )
+            )
+        );
     }
 
     //endregion
