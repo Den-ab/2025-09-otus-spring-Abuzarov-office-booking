@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import ru.otus.pw.controllers.request_dtos.LoginDTO;
 import ru.otus.pw.controllers.response_dtos.AuthResponse;
+import ru.otus.pw.models.EnteraUser;
 import ru.otus.pw.services.EnteraUserDetailsService;
 import ru.otus.pw.services.JwtService;
+import ru.otus.pw.services.UserService;
 
 /**
  * Контроллер для работы с пользователями.
@@ -31,6 +33,11 @@ public class UserController {
      * Сервис для работы с данными пользователя.
      */
     private final EnteraUserDetailsService enteraUserDetailsService;
+
+    /**
+     * Сервис для работы с пользователями.
+     */
+    private final UserService userService;
 
     /**
      * Сервис для работы с JWT.
@@ -52,6 +59,9 @@ public class UserController {
             new UsernamePasswordAuthenticationToken(loginDTO.email(), loginDTO.password())
         );
 
+        final EnteraUser enteraUser = this.userService.findByEmail(loginDTO.email())
+            .orElseThrow(() -> new IllegalStateException("Can't find user with email " + loginDTO.email()));
+
         UserDetails userDetails = this.enteraUserDetailsService.loadUserByUsername(loginDTO.email());
         String token = this.jwtService.generateToken(userDetails);
         String role = userDetails.getAuthorities().stream()
@@ -60,7 +70,7 @@ public class UserController {
             .map(authority -> authority.replace("ROLE_", ""))
             .orElse("USER");
 
-        return new AuthResponse(token, role);
+        return new AuthResponse(enteraUser.getId().toString(), token, role);
     }
 
     //endregion
