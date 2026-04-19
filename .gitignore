@@ -1,6 +1,5 @@
 target/
 dependency-reduced-pom.xml
-.env
 
 ### STS ###
 .apt_generated
